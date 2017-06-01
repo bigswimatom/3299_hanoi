@@ -3,7 +3,7 @@
 #  * file  : not_hanoi.pl
 #  * author: nakai<nakai@chem.s.u-tokyo.ac.jp>
 #  * create day  : Thu Jun  1 12:21:41 2017
-#  * last updated: Thu Jun  1 12:31:08 2017
+#  * last updated: Thu Jun  1 14:52:05 2017
 #
 # ****************************************************
 
@@ -23,15 +23,46 @@ if ( $ctl{'help'} ) { &help; exit; }
 #----------------------------------------------------------------------
 &startup();
 
-my %found;
+my %queue;
 chomp(my $input = <>);
-
-printf "%d\n",is_OK($input);
+$input .= ",,";
+$queue{$input} = 1;
+my $count = 1;
+while(1){
+  foreach my $input (sort{$queue{$a} <=> $queue{$b}} keys %queue){
+    move($input, $count);
+  }
+  $count++;
+}
 
 sub move{
   my ($input, $count) = @_;
-  my @stiks = split ",", $input;
-  
+  delete $queue{$input};
+  my @stack = split ",", $input;
+  push @stack, "" if($#stack < 1);
+  push @stack, "" if($#stack < 2);
+  for(my $i = 0; $i < 3; $i++){
+    my ($disk, $remaining) = pop_disk($stack[$i]);
+    next if($disk < 0);
+    #put disk
+    for(my $j = 0; $j < 2; $j++){
+      if(is_OK($disk . $stack[($i+1+$j)%3])){
+        my @new;
+        $new[$i] = $remaining;
+        $new[($i+1+$j)%3] = $disk . $stack[($i+1+$j)%3];
+        $new[($i+2-$j)%3] = $stack[($i+2-$j)%3];
+        ($new[1], $new[2]) = ($new[2], $new[1]) if($new[1] gt $new[2]);
+        my $key = join ",", @new;
+        if($key =~ m/^,,\d+$/){
+          printf "%d\n", $count;
+          exit;
+        }
+        unless (exists $queue{$key}){
+          $queue{$key} = 1;
+        }
+      }
+    }
+  }
 }
 
 sub is_OK{
@@ -47,6 +78,12 @@ sub is_OK{
   return 1;
 }
 
+sub pop_disk{
+  my $input = shift @_;
+  return -1 if $input eq "";
+  $input =~ m#^(\d)#;
+  return ($1, $');
+}
 
 
 #----------------------------------------------------------------------
